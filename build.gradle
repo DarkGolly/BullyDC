@@ -1,0 +1,29 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'com.darkgolly'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven { url "https://maven.lavalink.dev/releases" }
+}
+
+dependencies {
+    implementation 'net.dv8tion:JDA:6.1.2'
+    implementation group: 'dev.arbjerg', name: 'lavaplayer', version: '2.2.4'
+    implementation 'dev.lavalink.youtube:common:1.16.0'
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.17'
+    implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.5.21'
+    runtimeOnly group: 'com.gradleup.shadow', name: 'shadow-gradle-plugin', version: '9.2.2'
+}
+tasks.named('shadowJar') {
+    archiveFileName.set('DiscordBot.jar')
+    manifest {
+        attributes(
+                'Main-Class': 'com.darkgolly.Main' // <--- сюда твой главный класс
+        )
+    }
+}

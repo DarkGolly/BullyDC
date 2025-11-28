@@ -1,0 +1,39 @@
+<configuration>
+
+    <!-- Папка для логов — рядом с jar -->
+    <property name="LOG_DIR" value="${user.dir}"/>
+
+    <!-- Логи в консоль -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Логи в файл с ротацией по неделям -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/bot.log</file>
+        <append>true</append>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- Паттерн имен файлов с датой -->
+            <fileNamePattern>${LOG_DIR}/bot.%d{yyyy-MM-dd}.log</fileNamePattern>
+
+            <!-- Храним только 7 файлов (1 неделя) -->
+            <maxHistory>7</maxHistory>
+
+            <!-- Размер не ограничен (можно добавить SizeAndTimeBasedRollingPolicy) -->
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Корневой логгер -->
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE"/>
+    </root>
+
+</configuration>
