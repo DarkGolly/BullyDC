@@ -17,5 +17,12 @@ public class CommandListener extends ListenerAdapter {
         else if (msg.startsWith("!play")) new PlayCommand().execute(event);
         else if (msg.startsWith("!stop")) new StopCommand().execute(event);
         else if (msg.startsWith("!skip")) new SkipCommand().execute(event);
+        else if (msg.startsWith("!say")) {
+            try {
+                new SayCommand().execute(event);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

@@ -2,6 +2,7 @@ package com.darkgolly.commands;
 
 import com.darkgolly.audio.GuildMusicManager;
 import com.darkgolly.audio.PlayerManager;
+import com.darkgolly.util.Spliter;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 public class PlayCommand {
@@ -14,7 +15,7 @@ public class PlayCommand {
             return;
         }
 
-        String url = parts[1];
+        String url = Spliter.split(parts[1]);
 
         GuildMusicManager musicManager = PlayerManager.getInstance().getMusicManager(event.getGuild());
         event.getGuild().getAudioManager().setSendingHandler(musicManager.getSendHandler());
