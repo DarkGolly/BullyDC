@@ -19,7 +19,7 @@ public class PlayCommand {
 
         GuildMusicManager musicManager = PlayerManager.getInstance().getMusicManager(event.getGuild());
         event.getGuild().getAudioManager().setSendingHandler(musicManager.getSendHandler());
-
+        musicManager.setChannel(event.getChannel());
         PlayerManager.getInstance().loadAndPlay(event.getChannel(), url);
     }
 }

@@ -46,7 +46,7 @@ public class PlayerManager {
 
     public GuildMusicManager getMusicManager(Guild guild) {
         return musicManagers.computeIfAbsent(guild.getIdLong(),
-                id -> new GuildMusicManager(playerManager));
+                id -> new GuildMusicManager(playerManager, guild));
     }
 
     public void playVoice(MessageChannel channel, String mp3Path) {
@@ -58,29 +58,24 @@ public class PlayerManager {
         Guild guild = ((GuildMessageChannel) channel).getGuild();
         GuildMusicManager musicManager = getMusicManager(guild);
 
-        // Устанавливаем обработчик отправки аудио, если ещё не установлен
         if (guild.getAudioManager().getSendingHandler() == null) {
             guild.getAudioManager().setSendingHandler(musicManager.getSendHandler());
         }
 
-        // Загружаем локальный аудиофайл
         playerManager.loadItemOrdered(musicManager, mp3Path, new AudioLoadResultHandler() {
             @Override
             public void trackLoaded(AudioTrack track) {
-                // Очищаем очередь, так как это голосовое сообщение (не музыка)
                 musicManager.scheduler.getQueue().clear();
                 if (musicManager.player.getPlayingTrack() != null) {
                     musicManager.player.stopTrack();
                 }
 
-                // Воспроизводим аудиофайл
                 musicManager.scheduler.queue(track);
                 log.info("Воспроизводим голосовое сообщение: {}", track.getInfo().title);
             }
 
             @Override
             public void playlistLoaded(AudioPlaylist playlist) {
-                // Берём первый трек из плейлиста (на случай, если путь указывает на папку и т.п.)
                 AudioTrack track = playlist.getTracks().get(0);
                 trackLoaded(track);
             }
@@ -133,11 +128,14 @@ public class PlayerManager {
     private void addQueueAndPlay(AudioTrack track, GuildMusicManager musicManager, MessageChannel channel) {
         if (musicManager.scheduler.getQueue().isEmpty() && musicManager.player.getPlayingTrack() == null) {
             musicManager.scheduler.queue(track);
-            channel.sendMessage("▶ Играю: " + track.getInfo().title).queue();
+            channel.sendMessage("▶ Играю: " + track.getInfo().title)
+                    .queue(musicManager.scheduler::setLastStatusMessage);
             log.info("Играю: {}", track.getInfo().title);
         }else {
             musicManager.scheduler.queue(track);
-            channel.sendMessage("🎶 Добавлено в очередь: `" + track.getInfo().title + "`").queue();
+            channel.sendMessage("🎶 Добавлено в очередь: `" + track.getInfo().title + "`")
+                    .queue(musicManager.scheduler::setLastStatusMessage);
+
             log.info("Добавлено в очередь: {}", track.getInfo().title);
         }
     }
