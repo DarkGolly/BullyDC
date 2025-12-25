@@ -48,7 +48,7 @@ public class PlayerManager {
 
     public GuildMusicManager getMusicManager(Guild guild){
         return musicManagers.computeIfAbsent(guild.getIdLong(),
-                id -> new GuildMusicManager(playerManager, guild));
+                id -> new GuildMusicManager(playerManager));
     }
 
     public void playVoice(SlashCommandInteractionEvent event, String mp3Path){

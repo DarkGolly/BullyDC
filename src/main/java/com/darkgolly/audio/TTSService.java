@@ -9,7 +9,7 @@ public class TTSService {
         File output = new File("say-output.mp3");
 
         ProcessBuilder pb = new ProcessBuilder(
-                "python", "tts.py", text, output.getAbsolutePath()
+                "python.exe", "tts.py", text, output.getAbsolutePath()
         );
 
         pb.redirectErrorStream(true);

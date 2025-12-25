@@ -17,13 +17,14 @@ dependencies {
     implementation 'dev.lavalink.youtube:common:1.16.0'
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.17'
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.5.21'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
     runtimeOnly group: 'com.gradleup.shadow', name: 'shadow-gradle-plugin', version: '9.2.2'
 }
 tasks.named('shadowJar') {
     archiveFileName.set('DiscordBot.jar')
     manifest {
         attributes(
-                'Main-Class': 'com.darkgolly.Main' // <--- сюда твой главный класс
+                'Main-Class': 'com.darkgolly.Main'
         )
     }
 }
