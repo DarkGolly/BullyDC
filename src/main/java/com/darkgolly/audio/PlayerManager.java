@@ -12,11 +12,13 @@ import dev.lavalink.youtube.YoutubeAudioSourceManager;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class PlayerManager {
     private static final Logger log = LoggerFactory.getLogger(PlayerManager.class);
@@ -25,7 +27,7 @@ public class PlayerManager {
     private final AudioPlayerManager playerManager;
     private final Map<Long, GuildMusicManager> musicManagers;
 
-    public PlayerManager() {
+    public PlayerManager(){
         this.musicManagers = new HashMap<>();
         this.playerManager = new DefaultAudioPlayerManager();
 
@@ -39,34 +41,34 @@ public class PlayerManager {
     }
 
 
-    public static synchronized PlayerManager getInstance() {
+    public static synchronized PlayerManager getInstance(){
         if (INSTANCE == null) INSTANCE = new PlayerManager();
         return INSTANCE;
     }
 
-    public GuildMusicManager getMusicManager(Guild guild) {
+    public GuildMusicManager getMusicManager(Guild guild){
         return musicManagers.computeIfAbsent(guild.getIdLong(),
                 id -> new GuildMusicManager(playerManager, guild));
     }
 
-    public void playVoice(MessageChannel channel, String mp3Path) {
-        if (!(channel instanceof GuildMessageChannel)) {
+    public void playVoice(SlashCommandInteractionEvent event, String mp3Path){
+        if (!(event.getChannel() instanceof GuildMessageChannel)){
             log.warn("Канал не является GuildMessageChannel.");
             return;
         }
 
-        Guild guild = ((GuildMessageChannel) channel).getGuild();
+        Guild guild = ((GuildMessageChannel) event.getChannel()).getGuild();
         GuildMusicManager musicManager = getMusicManager(guild);
 
-        if (guild.getAudioManager().getSendingHandler() == null) {
+        if (guild.getAudioManager().getSendingHandler() == null){
             guild.getAudioManager().setSendingHandler(musicManager.getSendHandler());
         }
 
-        playerManager.loadItemOrdered(musicManager, mp3Path, new AudioLoadResultHandler() {
+        playerManager.loadItemOrdered(musicManager, mp3Path, new AudioLoadResultHandler(){
             @Override
-            public void trackLoaded(AudioTrack track) {
+            public void trackLoaded(AudioTrack track){
                 musicManager.scheduler.getQueue().clear();
-                if (musicManager.player.getPlayingTrack() != null) {
+                if (musicManager.player.getPlayingTrack() != null){
                     musicManager.player.stopTrack();
                 }
 
@@ -75,68 +77,65 @@ public class PlayerManager {
             }
 
             @Override
-            public void playlistLoaded(AudioPlaylist playlist) {
+            public void playlistLoaded(AudioPlaylist playlist){
                 AudioTrack track = playlist.getTracks().get(0);
                 trackLoaded(track);
             }
 
             @Override
-            public void noMatches() {
-                channel.sendMessage("❌ Не удалось найти или воспроизвести аудиофайл.").queue();
+            public void noMatches(){
+                event.reply("❌ Не удалось найти или воспроизвести аудиофайл.").queue();
                 log.warn("Аудиофайл не найден: {}", mp3Path);
             }
 
             @Override
-            public void loadFailed(FriendlyException exception) {
-                channel.sendMessage("❌ Ошибка воспроизведения аудиофайла: " + exception.getMessage()).queue();
+            public void loadFailed(FriendlyException exception){
+                event.reply("❌ Ошибка воспроизведения аудиофайла: " + exception.getMessage()).queue();
                 log.error("Ошибка загрузки аудиофайла {}: {}", mp3Path, exception.getMessage(), exception);
             }
         });
     }
 
-    public void loadAndPlay(MessageChannel channel, String trackUrl) {
-        GuildMusicManager musicManager = getMusicManager(((GuildMessageChannel) channel).getGuild());
+    public void loadAndPlay(SlashCommandInteractionEvent event, String trackUrl) {
+        GuildMusicManager musicManager = getMusicManager(Objects.requireNonNull(event.getGuild()));
 
         playerManager.loadItemOrdered(musicManager, trackUrl, new AudioLoadResultHandler() {
             @Override
             public void trackLoaded(AudioTrack track) {
-                addQueueAndPlay(track, musicManager, channel);
-                log.info("Трек загружен в аудио плеер.");
+                String response = addQueueAndPlay(track, musicManager);
+                event.reply(response).queue(musicManager.scheduler::setLastStatusMessage);
+                log.info(response);
             }
 
             @Override
             public void playlistLoaded(AudioPlaylist playlist) {
                 AudioTrack track = playlist.getTracks().get(0);
-                addQueueAndPlay(track, musicManager, channel);
-                log.info("Трек загружен из плейлиста.");
+                String response = addQueueAndPlay(track, musicManager);
+                event.reply(response).queue(musicManager.scheduler::setLastStatusMessage);
+                log.info(response);
             }
 
             @Override
             public void noMatches() {
-                channel.sendMessage("Не найдено.").queue();
+                event.reply("Не найдено.").queue();
                 log.info("Не найдено.");
             }
 
             @Override
             public void loadFailed(FriendlyException exception) {
-                channel.sendMessage("Ошибка загрузки трека: " + exception.getMessage()).queue();
+                event.reply("Ошибка загрузки трека: " + exception.getMessage()).queue();
                 log.error("Ошибка загрузки трека: {}", exception.getMessage(), exception);
             }
         });
     }
 
-    private void addQueueAndPlay(AudioTrack track, GuildMusicManager musicManager, MessageChannel channel) {
+    private String addQueueAndPlay(AudioTrack track, GuildMusicManager musicManager) {
         if (musicManager.scheduler.getQueue().isEmpty() && musicManager.player.getPlayingTrack() == null) {
             musicManager.scheduler.queue(track);
-            channel.sendMessage("▶ Играю: " + track.getInfo().title)
-                    .queue(musicManager.scheduler::setLastStatusMessage);
-            log.info("Играю: {}", track.getInfo().title);
+            return "▶ Играю: " + track.getInfo().title;
         }else {
             musicManager.scheduler.queue(track);
-            channel.sendMessage("🎶 Добавлено в очередь: `" + track.getInfo().title + "`")
-                    .queue(musicManager.scheduler::setLastStatusMessage);
-
-            log.info("Добавлено в очередь: {}", track.getInfo().title);
+            return "🎶 Добавлено в очередь: `" + track.getInfo().title + "`";
         }
     }
 }

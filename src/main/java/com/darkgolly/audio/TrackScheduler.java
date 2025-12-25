@@ -7,6 +7,7 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
+import net.dv8tion.jda.api.interactions.InteractionHook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,15 +20,12 @@ public class TrackScheduler extends AudioEventAdapter {
     private static final Logger log = LoggerFactory.getLogger(TrackScheduler.class);
     private final AudioPlayer player;
     private final BlockingQueue<AudioTrack> queue = new LinkedBlockingQueue<>();
-    private Message lastStatusMessage;
+    private InteractionHook interactionHook;
     // Discord-контекст
     private MessageChannel channel;
 
     public TrackScheduler(AudioPlayer player) {
         this.player = player;
-    }
-    public void setLastStatusMessage(Message message) {
-        this.lastStatusMessage = message;
     }
 
     public void setChannel(MessageChannel channel) {
@@ -53,27 +51,20 @@ public class TrackScheduler extends AudioEventAdapter {
         }
     }
 
-    @Override
-    public void onTrackException(AudioPlayer player, AudioTrack track, FriendlyException exception) {
-        if (lastStatusMessage != null) {
-            lastStatusMessage.delete().queue(
-                    success -> {},
-                    error -> log.warn("Не удалось удалить сообщение", error)
-            );
-            lastStatusMessage = null;
-        }
-
-        if (exception.getMessage().toLowerCase().contains("age")) {
-            channel.sendMessage("⛔ Видео имеет возрастное ограничение (18+)").queue();
-        } else {
-            channel.sendMessage("❌ Ошибка воспроизведения: " + exception.getMessage()).queue();
-        }
-
-        player.stopTrack();
-    }
-
-
     public List<AudioTrack> getQueue() {
         return new ArrayList<>(queue);
+    }
+
+    public void setLastStatusMessage(InteractionHook interactionHook) {
+        this.interactionHook = interactionHook;
+    }
+
+    @Override
+    public void onTrackException(AudioPlayer player, AudioTrack track, FriendlyException exception) {
+        if (exception.getMessage().toLowerCase().contains("age")) {
+            interactionHook.editOriginal("⛔ Видео имеет возрастное ограничение (18+)").queue();
+        } else {
+            interactionHook.editOriginal("❌ Ошибка воспроизведения: " + exception.getMessage()).queue();
+        }
     }
 }

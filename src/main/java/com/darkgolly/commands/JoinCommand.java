@@ -1,11 +1,12 @@
 package com.darkgolly.commands;
 
 import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 public class JoinCommand {
 
-    public void execute(MessageReceivedEvent event) {
+    public void execute(SlashCommandInteractionEvent event) {
         AudioChannel channel = event.getMember().getVoiceState().getChannel();
 
         if (channel == null) {
@@ -14,6 +15,6 @@ public class JoinCommand {
         }
 
         event.getGuild().getAudioManager().openAudioConnection(channel);
-        event.getChannel().sendMessage("Подключился к голосовому каналу!").queue();
+        event.reply("Подключился к голосовому каналу!").queue();
     }
 }

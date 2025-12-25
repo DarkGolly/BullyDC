@@ -2,15 +2,16 @@ package com.darkgolly.commands;
 
 import com.darkgolly.audio.GuildMusicManager;
 import com.darkgolly.audio.PlayerManager;
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
-public class SkipCommand {
-    public void execute(MessageReceivedEvent event) {
+public class SkipCommand{
+
+    public void execute(SlashCommandInteractionEvent event){
         GuildMusicManager musicManager = PlayerManager.getInstance()
                 .getMusicManager(event.getGuild());
 
         musicManager.scheduler.nextTrack();
 
-        event.getMessage().reply("⏭ Трек пропущен!").queue();
+        event.reply("⏭ Трек пропущен!").queue();
     }
 }

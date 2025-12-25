@@ -15,6 +15,7 @@ import static net.dv8tion.jda.api.interactions.commands.OptionType.STRING;
 
 public class Main {
     private static final Logger log = org.slf4j.LoggerFactory.getLogger(Main.class);
+
     public static void main(String[] args) {
         JDA jda = JDABuilder.createDefault(System.getenv("BOT_TOKEN"))
                 .enableIntents(GatewayIntent.MESSAGE_CONTENT)
@@ -24,17 +25,20 @@ public class Main {
 
         CommandListUpdateAction commands = jda.updateCommands();
 
-        commands.addCommands(
-                Commands.slash("say", "Makes the bot say what you tell it to")
-                        .addOption(STRING, "content", "What the bot should say", true), // Accepting a user input
-                Commands.slash("leave", "Makes the bot leave the server")
-                        .setContexts(InteractionContextType.GUILD) // this doesn't make sense in DMs
-                        .setDefaultPermissions(DefaultMemberPermissions.DISABLED), // only admins should be able to use this command.
-                Commands.slash("join", "Makes the bot join the server"),
-                Commands.slash("play", "Play a song")
+        commands = commands.addCommands(
+                Commands.slash("say", "Заставляет бота сказать что-то")
+                        .addOption(STRING, "query", "То что бот должен сказать", true),
+                Commands.slash("leave", "Выгоняет бота из голосового канала")
+                        .setContexts(InteractionContextType.GUILD)
+                        .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
+                Commands.slash("join", "Присоединяет бота к голосовому каналу"),
+                Commands.slash("skip", "Пропустить трек"),
+                Commands.slash("stop", "Прекратить воспроизведение"),
+                Commands.slash("play", "Включает музыку")
+                        .addOption(STRING, "query", "URL или название трека", true)
+
         );
 
         commands.queue();
     }
-
 }
