@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.gradleup.shadow' version '9.3.0'
 }
 
 group = 'com.darkgolly'
@@ -12,16 +12,19 @@ repositories {
 }
 
 dependencies {
-    implementation 'net.dv8tion:JDA:6.1.2'
-    implementation group: 'dev.arbjerg', name: 'lavaplayer', version: '2.2.4'
+    implementation 'net.dv8tion:JDA:6.4.1'
+    implementation 'dev.arbjerg:lavaplayer:2.2.6'
     implementation 'dev.lavalink.youtube:common:1.16.0'
+    implementation 'club.minnced:jdave-api:0.1.8'
+    implementation 'club.minnced:jdave-native-win-x86-64:0.1.8'
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.17'
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.5.21'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
-    runtimeOnly group: 'com.gradleup.shadow', name: 'shadow-gradle-plugin', version: '9.2.2'
 }
 tasks.named('shadowJar') {
     archiveFileName.set('DiscordBot.jar')
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    mergeServiceFiles()
     manifest {
         attributes(
                 'Main-Class': 'com.darkgolly.Main'
