@@ -10,7 +10,7 @@ public class StopCommand {
     public void execute(SlashCommandInteractionEvent event){
         GuildMusicManager musicManager = PlayerManager.getInstance().getMusicManager(event.getGuild());
         musicManager.player.stopTrack();
-        musicManager.scheduler.getQueue().clear();
+        musicManager.scheduler.clearQueue();
 
         event.reply("Остановлено.").queue();
     }

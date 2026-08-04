@@ -67,7 +67,7 @@ public class PlayerManager {
         playerManager.loadItemOrdered(musicManager, mp3Path, new AudioLoadResultHandler(){
             @Override
             public void trackLoaded(AudioTrack track){
-                musicManager.scheduler.getQueue().clear();
+                musicManager.scheduler.clearQueue();
                 if (musicManager.player.getPlayingTrack() != null){
                     musicManager.player.stopTrack();
                 }
@@ -84,13 +84,13 @@ public class PlayerManager {
 
             @Override
             public void noMatches(){
-                event.reply("❌ Не удалось найти или воспроизвести аудиофайл.").queue();
+                event.getHook().sendMessage("❌ Не удалось найти или воспроизвести аудиофайл.").queue();
                 log.warn("Аудиофайл не найден: {}", mp3Path);
             }
 
             @Override
             public void loadFailed(FriendlyException exception){
-                event.reply("❌ Ошибка воспроизведения аудиофайла: " + exception.getMessage()).queue();
+                event.getHook().sendMessage("❌ Ошибка воспроизведения аудиофайла: " + exception.getMessage()).queue();
                 log.error("Ошибка загрузки аудиофайла {}: {}", mp3Path, exception.getMessage(), exception);
             }
         });
@@ -103,7 +103,8 @@ public class PlayerManager {
             @Override
             public void trackLoaded(AudioTrack track) {
                 String response = addQueueAndPlay(track, musicManager);
-                event.reply(response).queue(musicManager.scheduler::setLastStatusMessage);
+                event.getHook().sendMessage(response).queue();
+                musicManager.scheduler.setLastStatusMessage(event.getHook());
                 log.info(response);
             }
 
@@ -111,19 +112,20 @@ public class PlayerManager {
             public void playlistLoaded(AudioPlaylist playlist) {
                 AudioTrack track = playlist.getTracks().get(0);
                 String response = addQueueAndPlay(track, musicManager);
-                event.reply(response).queue(musicManager.scheduler::setLastStatusMessage);
+                event.getHook().sendMessage(response).queue();
+                musicManager.scheduler.setLastStatusMessage(event.getHook());
                 log.info(response);
             }
 
             @Override
             public void noMatches() {
-                event.reply("Не найдено.").queue();
+                event.getHook().sendMessage("Не найдено.").queue();
                 log.info("Не найдено.");
             }
 
             @Override
             public void loadFailed(FriendlyException exception) {
-                event.reply("Ошибка загрузки трека: " + exception.getMessage()).queue();
+                event.getHook().sendMessage("Ошибка загрузки трека: " + exception.getMessage()).queue();
                 log.error("Ошибка загрузки трека: {}", exception.getMessage(), exception);
             }
         });

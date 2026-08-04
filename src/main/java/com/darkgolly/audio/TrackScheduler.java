@@ -33,15 +33,18 @@ public class TrackScheduler extends AudioEventAdapter {
     }
 
     public void queue(AudioTrack track) {
-        if (player.getPlayingTrack() == null) {
-            player.startTrack(track, false);
-        } else {
+        if (!player.startTrack(track, true)) {
             queue.offer(track);
         }
     }
 
     public void nextTrack() {
-        player.startTrack(queue.poll(), false);
+        AudioTrack next = queue.poll();
+        if (next != null) {
+            player.startTrack(next, false);
+        } else {
+            player.stopTrack();
+        }
     }
 
     @Override
@@ -55,16 +58,26 @@ public class TrackScheduler extends AudioEventAdapter {
         return new ArrayList<>(queue);
     }
 
+    public void clearQueue() {
+        queue.clear();
+    }
+
     public void setLastStatusMessage(InteractionHook interactionHook) {
         this.interactionHook = interactionHook;
     }
 
     @Override
     public void onTrackException(AudioPlayer player, AudioTrack track, FriendlyException exception) {
-        if (exception.getMessage().toLowerCase().contains("age")) {
+        if (interactionHook == null) {
+            log.error("Ошибка воспроизведения трека: {}", exception.getMessage(), exception);
+            return;
+        }
+
+        String message = exception.getMessage();
+        if (message != null && message.toLowerCase().contains("age")) {
             interactionHook.editOriginal("⛔ Видео имеет возрастное ограничение (18+)").queue();
         } else {
-            interactionHook.editOriginal("❌ Ошибка воспроизведения: " + exception.getMessage()).queue();
+            interactionHook.editOriginal("❌ Ошибка воспроизведения: " + message).queue();
         }
     }
 }

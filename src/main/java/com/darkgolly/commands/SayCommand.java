@@ -17,13 +17,19 @@ public class SayCommand {
         String text = event.getOption("query").getAsString();
 
         AudioChannel vc = Objects.requireNonNull(event.getMember()).getVoiceState().getChannel();
-        File mp3 = tts.generateSpeech(text);
+        if (vc == null) {
+            event.reply("Вы не находитесь в голосовом канале!").queue();
+            return;
+        }
 
+        event.deferReply().queue();
+
+        File mp3 = tts.generateSpeech(text);
 
         event.getGuild().getAudioManager().openAudioConnection(vc);
 
         PlayerManager.getInstance().playVoice(event, mp3.getAbsolutePath());
-        event.reply("🔊 Произношу").queue();
+        event.getHook().sendMessage("🔊 Произношу").queue();
 
     }
 }
