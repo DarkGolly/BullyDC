@@ -17,6 +17,7 @@ dependencies {
     implementation 'dev.lavalink.youtube:common:1.16.0'
     implementation 'club.minnced:jdave-api:0.1.8'
     implementation 'club.minnced:jdave-native-win-x86-64:0.1.8'
+    implementation 'club.minnced:jdave-native-linux-x86-64:0.1.8'
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.17'
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.5.21'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
