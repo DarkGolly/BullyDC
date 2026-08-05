@@ -1,7 +1,11 @@
 package com.darkgolly.audio;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 public class TTSService {
@@ -26,15 +30,34 @@ public class TTSService {
         pb.redirectErrorStream(true);
 
         Process process = pb.start();
+
+        // Читаем вывод процесса параллельно с ожиданием, иначе при заполнении буфера
+        // трубы (pipe) процесс зависнет на записи, а мы никогда не узнаем причину сбоя.
+        StringBuilder processOutput = new StringBuilder();
+        Thread outputReader = new Thread(() -> {
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    processOutput.append(line).append('\n');
+                }
+            } catch (IOException ignored) {
+                // поток закрывается при завершении процесса
+            }
+        });
+        outputReader.setDaemon(true);
+        outputReader.start();
+
         boolean finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        outputReader.join(TimeUnit.SECONDS.toMillis(5));
 
         if (!finished) {
             process.destroyForcibly();
-            throw new RuntimeException("Ошибка: TTS-процесс не завершился за " + TIMEOUT_SECONDS + " секунд");
+            throw new RuntimeException("Ошибка: TTS-процесс не завершился за " + TIMEOUT_SECONDS + " секунд. Вывод: " + processOutput);
         }
 
         if (!output.exists() || output.length() == 0) {
-            throw new RuntimeException("Ошибка: файл TTS не создан");
+            throw new RuntimeException("Ошибка: файл TTS не создан (код завершения: " + process.exitValue() + "). Вывод: " + processOutput);
         }
 
         return output;

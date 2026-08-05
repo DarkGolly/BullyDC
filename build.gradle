@@ -14,7 +14,7 @@ repositories {
 dependencies {
     implementation 'net.dv8tion:JDA:6.4.1'
     implementation 'dev.arbjerg:lavaplayer:2.2.6'
-    implementation 'dev.lavalink.youtube:common:1.16.0'
+    implementation 'dev.lavalink.youtube:common:1.18.1'
     implementation 'club.minnced:jdave-api:0.1.8'
     implementation 'club.minnced:jdave-native-win-x86-64:0.1.8'
     implementation 'club.minnced:jdave-native-linux-x86-64:0.1.8'
@@ -32,3 +32,4 @@ tasks.named('shadowJar') {
         )
     }
 }
+
