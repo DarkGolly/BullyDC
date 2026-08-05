@@ -16,6 +16,7 @@ public class CommandListener extends ListenerAdapter {
                 case "join" -> new JoinCommand().execute(event);
                 case "leave" -> new LeaveCommand().execute(event);
                 case "play" -> new PlayCommand().execute(event);
+                case "playlist" -> new PlaylistCommand().execute(event);
                 case "stop" -> new StopCommand().execute(event);
                 case "skip" -> new SkipCommand().execute(event);
                 case "say" -> new SayCommand().execute(event);

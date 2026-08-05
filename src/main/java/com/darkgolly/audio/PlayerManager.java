@@ -131,6 +131,43 @@ public class PlayerManager {
         });
     }
 
+    public void loadAndPlayPlaylist(SlashCommandInteractionEvent event, String trackUrl) {
+        GuildMusicManager musicManager = getMusicManager(Objects.requireNonNull(event.getGuild()));
+
+        playerManager.loadItemOrdered(musicManager, trackUrl, new AudioLoadResultHandler() {
+            @Override
+            public void trackLoaded(AudioTrack track) {
+                String response = addQueueAndPlay(track, musicManager);
+                event.getHook().sendMessage(response).queue();
+                musicManager.scheduler.setLastStatusMessage(event.getHook());
+                log.info(response);
+            }
+
+            @Override
+            public void playlistLoaded(AudioPlaylist playlist) {
+                for (AudioTrack track : playlist.getTracks()) {
+                    musicManager.scheduler.queue(track);
+                }
+                String response = "🎶 Добавлен плейлист `" + playlist.getName() + "` (" + playlist.getTracks().size() + " треков)";
+                event.getHook().sendMessage(response).queue();
+                musicManager.scheduler.setLastStatusMessage(event.getHook());
+                log.info(response);
+            }
+
+            @Override
+            public void noMatches() {
+                event.getHook().sendMessage("Не найдено.").queue();
+                log.info("Не найдено.");
+            }
+
+            @Override
+            public void loadFailed(FriendlyException exception) {
+                event.getHook().sendMessage("Ошибка загрузки плейлиста: " + exception.getMessage()).queue();
+                log.error("Ошибка загрузки плейлиста: {}", exception.getMessage(), exception);
+            }
+        });
+    }
+
     private String addQueueAndPlay(AudioTrack track, GuildMusicManager musicManager) {
         if (musicManager.scheduler.getQueue().isEmpty() && musicManager.player.getPlayingTrack() == null) {
             musicManager.scheduler.queue(track);
