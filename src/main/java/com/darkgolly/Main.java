@@ -1,6 +1,7 @@
 package com.darkgolly;
 
 import com.darkgolly.listeners.CommandListener;
+import com.darkgolly.util.Env;
 import club.minnced.discord.jdave.interop.JDaveSessionFactory;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -23,7 +24,7 @@ public class Main {
         AudioModuleConfig audioConfig = new AudioModuleConfig()
                 .withDaveSessionFactory(new JDaveSessionFactory());
 
-        JDA jda = JDABuilder.createDefault(System.getenv("BOT_TOKEN"))
+        JDA jda = JDABuilder.createDefault(Env.get("BOT_TOKEN"))
                 .enableIntents(GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_VOICE_STATES)
                 .enableCache(CacheFlag.VOICE_STATE)
                 .setAudioModuleConfig(audioConfig)
