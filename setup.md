@@ -18,13 +18,13 @@ COPY build/libs/DiscordBot.jar build/libs/tts.py ./
 
 ```bash
 ssh <ваш_пользователь>@<ip_nas>
-cd /volume1/docker/BullyDC   # путь замените на реальный
+cd /volume1/homes/darkgolly/projects/BullyDC
 ```
 
 ## 4. Соберите новый образ
 
 ```bash
-sudo docker build -t bullydc:latest .
+sudo docker build -t discord-bot:latest .
 ```
 
 ## 5. Остановите и удалите старый контейнер
@@ -44,23 +44,26 @@ sudo docker rm <имя_контейнера>
 
 ## 6. Запустите новый контейнер с теми же параметрами, что и раньше
 
-Важно сохранить сеть, в которой доступен контейнер `xray-proxy` — Dockerfile жёстко прописывает `-DsocksProxyHost=xray-proxy`, значит новый контейнер должен быть в той же docker-сети, что и прокси:
+Важно сохранить сеть, в которой доступен контейнер `xray-proxy` — Dockerfile жёстко прописывает `-DsocksProxyHost=xray-proxy`, значит новый контейнер должен быть в той же docker-сети, что и прокси.
+
+Токен и остальные настройки теперь не передаются через `-e`, а лежат в файле `.env` рядом с проектом на NAS (см. `MusicArchiver`/`Env`) — его нужно примонтировать в `/app/.env`. Папка с музыкой тоже монтируется отдельным томом и должна совпадать с `MUSIC_ARCHIVE_PATH` из `.env`:
 
 ```bash
 sudo docker run -d \
-  --name bullydc \
+  --name discord-bot \
   --network <та_же_сеть_что_и_xray-proxy> \
   --restart unless-stopped \
-  -e BOT_TOKEN=<ваш_токен_бота> \
-  bullydc:latest
+  -v /volume1/homes/darkgolly/projects/BullyDC/.env:/app/.env:ro \
+  -v /volume1/music:/music \
+  discord-bot:latest
 ```
 
-Если раньше контейнер запускался через **Container Manager** (GUI Synology) — проще пересобрать образ командой из шага 4 по SSH, а затем в Container Manager: остановить старый контейнер → удалить → создать новый из образа `bullydc:latest`, указав тот же проект/сеть и переменную `BOT_TOKEN`, что были в старом контейнере.
+Если раньше контейнер запускался через **Container Manager** (GUI Synology) — проще пересобрать образ командой из шага 4 по SSH, а затем в Container Manager: остановить старый контейнер → удалить → создать новый из образа `discord-bot:latest`, указав ту же сеть и те же тома (`.env` и папку с музыкой), что описаны выше.
 
 ## 7. Проверьте логи
 
 ```bash
-sudo docker logs -f bullydc
+sudo docker logs -f discord-bot
 ```
 
 Убедитесь, что бот залогинился в Discord и ошибок при старте нет.

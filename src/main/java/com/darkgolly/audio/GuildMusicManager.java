@@ -15,6 +15,9 @@ public class GuildMusicManager {
         this.player = manager.createPlayer();
         this.scheduler = new TrackScheduler(player);
         this.player.addListener(this.scheduler);
+        // Архивация теперь пишет тот же PCM-поток, что уже играет в Discord (см. MusicArchiver),
+        // а не качает трек заново через yt-dlp.
+        this.player.setFilterFactory(MusicArchiver.getInstance());
     }
 
     public AudioSendHandler getSendHandler() {

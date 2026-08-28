@@ -1,9 +1,12 @@
 FROM debian:trixie-slim
 
+# ffmpeg нужен и для tts.py, и для MusicArchiver — он кодирует в mp3 то, что LavaPlayer уже
+# декодирует для проигрывания в Discord (см. MusicArchiver), сеть ему не требуется.
 RUN apt-get update && apt-get install -y --no-install-recommends \
       openjdk-25-jdk-headless \
       python3 \
       python3-pip \
+      ffmpeg \
     && pip3 install --no-cache-dir --break-system-packages gtts \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 

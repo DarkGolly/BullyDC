@@ -14,14 +14,23 @@ repositories {
 dependencies {
     implementation 'net.dv8tion:JDA:6.4.1'
     implementation 'dev.arbjerg:lavaplayer:2.2.6'
-    implementation 'dev.lavalink.youtube:common:1.18.1'
+    implementation 'dev.lavalink.youtube:common:1.18.2'
     implementation 'club.minnced:jdave-api:0.1.8'
     implementation 'club.minnced:jdave-native-win-x86-64:0.1.8'
     implementation 'club.minnced:jdave-native-linux-x86-64:0.1.8'
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.17'
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.5.21'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
+tasks.named('test') {
+    useJUnitPlatform()
+    // Отдельная директория под build/ — MusicArchiver читает MUSIC_ARCHIVE_PATH один раз при
+    // загрузке класса (см. Env), поэтому переопределить его можно только переменной окружения
+    // самого тестового JVM, не изнутри теста.
+    environment 'MUSIC_ARCHIVE_PATH', layout.buildDirectory.dir('test-music-archive').get().asFile.absolutePath
+}
+
 tasks.named('shadowJar') {
     archiveFileName.set('DiscordBot.jar')
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE

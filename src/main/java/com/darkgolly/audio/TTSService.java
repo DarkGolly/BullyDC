@@ -1,5 +1,7 @@
 package com.darkgolly.audio;
 
+import com.darkgolly.util.Env;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +16,7 @@ public class TTSService {
     // "python.exe" зависит от PATH и не всегда зарегистрирован. На Windows штатно есть
     // лаунчер "py", на Linux/macOS обычно "python3" ("python" часто отсутствует или это python2).
     // Переменная окружения TTS_PYTHON_EXECUTABLE позволяет переопределить на любой машине.
-    private static final String PYTHON_EXECUTABLE = System.getenv().getOrDefault(
+    private static final String PYTHON_EXECUTABLE = Env.get(
             "TTS_PYTHON_EXECUTABLE",
             System.getProperty("os.name", "").toLowerCase().contains("win") ? "py" : "python3"
     );

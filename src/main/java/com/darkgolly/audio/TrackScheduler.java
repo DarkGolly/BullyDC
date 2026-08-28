@@ -68,16 +68,25 @@ public class TrackScheduler extends AudioEventAdapter {
 
     @Override
     public void onTrackException(AudioPlayer player, AudioTrack track, FriendlyException exception) {
+        log.error("Ошибка воспроизведения трека: {}", exception.getMessage(), exception);
+
         if (interactionHook == null) {
-            log.error("Ошибка воспроизведения трека: {}", exception.getMessage(), exception);
             return;
         }
 
-        String message = exception.getMessage();
-        if (message != null && message.toLowerCase().contains("age")) {
-            interactionHook.editOriginal("⛔ Видео имеет возрастное ограничение (18+)").queue();
-        } else {
-            interactionHook.editOriginal("❌ Ошибка воспроизведения: " + message).queue();
+        interactionHook.editOriginal(friendlyErrorMessage(exception.getMessage())).queue();
+    }
+
+    // Пользователю в Discord не должен улетать сырой текст исключения (у некоторых ошибок
+    // YouTube-плеера он содержит перечисление попыток по всем клиентам и похож на кусок лога).
+    private static String friendlyErrorMessage(String message) {
+        String lower = message == null ? "" : message.toLowerCase();
+        if (lower.contains("age")) {
+            return "⛔ Видео имеет возрастное ограничение (18+)";
         }
+        if (lower.contains("login") || lower.contains("sign in")) {
+            return "🔒 Видео недоступно без входа в аккаунт YouTube — бот не может его воспроизвести";
+        }
+        return "❌ Не удалось воспроизвести трек (подробности в логах бота)";
     }
 }

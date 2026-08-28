@@ -1,5 +1,6 @@
 package com.darkgolly.audio;
 
+import com.darkgolly.util.Env;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
@@ -9,6 +10,11 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import dev.lavalink.youtube.YoutubeAudioSourceManager;
+import dev.lavalink.youtube.YoutubeSourceOptions;
+import dev.lavalink.youtube.clients.AndroidVr;
+import dev.lavalink.youtube.clients.Tv;
+import dev.lavalink.youtube.clients.Web;
+import dev.lavalink.youtube.clients.WebEmbedded;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
@@ -31,7 +37,29 @@ public class PlayerManager {
         this.musicManagers = new HashMap<>();
         this.playerManager = new DefaultAudioPlayerManager();
 
-        dev.lavalink.youtube.YoutubeAudioSourceManager yt = new YoutubeAudioSourceManager();
+        // Аудио реально льётся через xray-proxy (см. -DsocksProxyHost в Dockerfile), а не напрямую —
+        // при просадках скорости/задержках на прокси штатного 5-секундного буфера LavaPlayer не
+        // хватает, и воспроизведение обрывается паузами. Держим больший запас на такой случай.
+        playerManager.setFrameBufferDuration(Integer.parseInt(Env.get("AUDIO_BUFFER_MS", "15000")));
+
+        // Локальный разбор плеерного скрипта YouTube (извлечение sig-функции) регулярно ломается
+        // из-за обфускации на их стороне — переключаем расшифровку подписи на внешний сервис
+        // yt-cipher (https://github.com/kikkia/yt-cipher), который обновляется отдельно от нашей
+        // зависимости. По умолчанию — публичный инстанс без пароля (лимит 10 запросов/сек, для
+        // личного бота с запасом хватает); можно переопределить на свой через .env.
+        YoutubeSourceOptions options = new YoutubeSourceOptions().setRemoteCipher(
+                Env.get("YOUTUBE_CIPHER_URL", "https://cipher.kikkia.dev/"),
+                Env.get("YOUTUBE_CIPHER_PASSWORD", ""),
+                "BullyDC-discord-bot"
+        );
+
+        // Из клиентов по умолчанию (ANDROID_VR/WEB/WEB_EMBEDDED_PLAYER) ни один не поддерживает
+        // OAuth — токен просто не к чему было бы применить. TV — единственный OAuth-совместимый
+        // клиент, добавляем его первым, остальные оставляем как фолбэк на случай, если OAuth выключен.
+        dev.lavalink.youtube.YoutubeAudioSourceManager yt = new YoutubeAudioSourceManager(
+                options, new Tv(), new AndroidVr(), new Web(), new WebEmbedded()
+        );
+        configureOauth(yt);
         playerManager.registerSourceManager(yt);
 
         AudioSourceManagers.registerRemoteSources(playerManager);
@@ -40,6 +68,27 @@ public class PlayerManager {
         playerManager.registerSourceManager(new HttpAudioSourceManager());
     }
 
+
+    // YouTube требует авторизации почти для всех видео без входа в аккаунт (антибот-защита).
+    // Явный opt-in через .env, т.к. это привязка Google-аккаунта — разработчики youtube-source
+    // прямо предупреждают использовать запасной (burner) аккаунт, не основной.
+    //   YOUTUBE_OAUTH_REFRESH_TOKEN — уже полученный refresh-токен, применяется сразу.
+    //   YOUTUBE_OAUTH_ENABLED=true  — первый запуск: в логах появится ссылка+код для входа,
+    //                                 после успешного входа туда же будет выведен refresh-токен,
+    //                                 который нужно сохранить в YOUTUBE_OAUTH_REFRESH_TOKEN.
+    private static void configureOauth(YoutubeAudioSourceManager yt) {
+        String refreshToken = Env.get("YOUTUBE_OAUTH_REFRESH_TOKEN");
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            yt.useOauth2(refreshToken, true);
+            log.info("YouTube OAuth включён (используется сохранённый refresh-токен)");
+            return;
+        }
+
+        if (Boolean.parseBoolean(Env.get("YOUTUBE_OAUTH_ENABLED", "false"))) {
+            log.info("YouTube OAuth: refresh-токен не задан, запускаю флоу входа — ссылка и код появятся в логах ниже");
+            yt.useOauth2(null, false);
+        }
+    }
 
     public static synchronized PlayerManager getInstance(){
         if (INSTANCE == null) INSTANCE = new PlayerManager();
@@ -90,7 +139,7 @@ public class PlayerManager {
 
             @Override
             public void loadFailed(FriendlyException exception){
-                event.getHook().sendMessage("❌ Ошибка воспроизведения аудиофайла: " + exception.getMessage()).queue();
+                event.getHook().sendMessage("❌ Ошибка воспроизведения аудиофайла (подробности в логах бота)").queue();
                 log.error("Ошибка загрузки аудиофайла {}: {}", mp3Path, exception.getMessage(), exception);
             }
         });
@@ -125,7 +174,7 @@ public class PlayerManager {
 
             @Override
             public void loadFailed(FriendlyException exception) {
-                event.getHook().sendMessage("Ошибка загрузки трека: " + exception.getMessage()).queue();
+                event.getHook().sendMessage("❌ Не удалось загрузить трек (подробности в логах бота)").queue();
                 log.error("Ошибка загрузки трека: {}", exception.getMessage(), exception);
             }
         });
@@ -162,7 +211,7 @@ public class PlayerManager {
 
             @Override
             public void loadFailed(FriendlyException exception) {
-                event.getHook().sendMessage("Ошибка загрузки плейлиста: " + exception.getMessage()).queue();
+                event.getHook().sendMessage("❌ Не удалось загрузить плейлист (подробности в логах бота)").queue();
                 log.error("Ошибка загрузки плейлиста: {}", exception.getMessage(), exception);
             }
         });
